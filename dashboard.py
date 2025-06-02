@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import json
 
 st.set_page_config(
     page_title="Dashboard de TI - Inventário",
@@ -10,8 +11,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# Lê a chave do arquivo de secrets
 escopo = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-credenciais = ServiceAccountCredentials.from_json_keyfile_name("chave_google.json", escopo)
+chave_json = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+credenciais = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(chave_json), escopo)
 cliente = gspread.authorize(credenciais)
 
 @st.cache_data(ttl=300)
