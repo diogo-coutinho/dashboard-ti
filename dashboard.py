@@ -48,7 +48,6 @@ tab1, tab2, tab3 = st.tabs(["Toners", "Periféricos", "Tintas"])
 with tab1:
     st.header("Toners")
 
-    # Filtro por status
     if toner_status == "LACRADO":
         df_toners_filtrado = df_toners[df_toners["LACRADO/ABERTO"] == "LACRADO"]
     elif toner_status == "ABERTO":
@@ -56,7 +55,6 @@ with tab1:
     else:
         df_toners_filtrado = df_toners
 
-    # Remove linhas com quantidade nula ou zero
     df_toners_filtrado = df_toners_filtrado[df_toners_filtrado["QUANTIDADE"] > 0]
 
     col1, col2 = st.columns(2)
@@ -84,6 +82,7 @@ with tab1:
         st.subheader("Quantidade por Modelo")
         df_grouped = df_toners_filtrado.groupby(["MODELO", "LACRADO/ABERTO"], as_index=False)["QUANTIDADE"].sum()
         df_grouped_sorted = df_grouped.sort_values("QUANTIDADE", ascending=False)
+        df_grouped_sorted["MODELO"] = df_grouped_sorted["MODELO"].astype(str)
 
         fig_bar = px.bar(
             df_grouped_sorted,
@@ -103,6 +102,7 @@ with tab1:
             yaxis=dict(showgrid=False),
             xaxis_tickangle=-45
         )
+        fig_bar.update_xaxes(type='category')  # Força eixo X categórico
         st.plotly_chart(fig_bar, use_container_width=True)
 
 # ===== TAB 2: PERIFÉRICOS =====
