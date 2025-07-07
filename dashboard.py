@@ -44,14 +44,20 @@ st.markdown("Visualização completa do estoque de toners, periféricos e tintas
 
 tab1, tab2, tab3 = st.tabs(["Toners", "Periféricos", "Tintas"])
 
+# ===== TAB 1: TONERS =====
 with tab1:
     st.header("Toners")
+
+    # Filtro por status
     if toner_status == "LACRADO":
         df_toners_filtrado = df_toners[df_toners["LACRADO/ABERTO"] == "LACRADO"]
     elif toner_status == "ABERTO":
         df_toners_filtrado = df_toners[df_toners["LACRADO/ABERTO"] == "ABERTO"]
     else:
         df_toners_filtrado = df_toners
+
+    # Remove linhas com quantidade nula ou zero
+    df_toners_filtrado = df_toners_filtrado[df_toners_filtrado["QUANTIDADE"] > 0]
 
     col1, col2 = st.columns(2)
     with col1:
@@ -70,14 +76,17 @@ with tab1:
             color="LACRADO/ABERTO",
             color_discrete_map={"LACRADO": "#006400", "ABERTO": "#7CFC00"}
         )
-        fig_pie.update_layout(showlegend=False)
+        fig_pie.update_traces(textinfo='percent+label', textfont_size=14)
+        fig_pie.update_layout(showlegend=True, legend_title="Status")
         st.plotly_chart(fig_pie, use_container_width=True)
 
     with col2:
         st.subheader("Quantidade por Modelo")
         df_grouped = df_toners_filtrado.groupby(["MODELO", "LACRADO/ABERTO"], as_index=False)["QUANTIDADE"].sum()
+        df_grouped_sorted = df_grouped.sort_values("QUANTIDADE", ascending=False)
+
         fig_bar = px.bar(
-            df_grouped,
+            df_grouped_sorted,
             x="MODELO",
             y="QUANTIDADE",
             color="LACRADO/ABERTO",
@@ -85,16 +94,18 @@ with tab1:
             text="QUANTIDADE",
             color_discrete_map={"LACRADO": "#006400", "ABERTO": "#7CFC00"}
         )
-        fig_bar.update_traces(textposition="outside")
+        fig_bar.update_traces(textposition="outside", textfont_size=12)
         fig_bar.update_layout(
             xaxis_title="Modelos",
             yaxis_title="Quantidade",
             legend_title="Status",
             plot_bgcolor='rgba(0,0,0,0)',
-            yaxis=dict(showgrid=False)
+            yaxis=dict(showgrid=False),
+            xaxis_tickangle=-45
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
+# ===== TAB 2: PERIFÉRICOS =====
 with tab2:
     st.header("Periféricos")
     col1, col2 = st.columns(2)
@@ -115,6 +126,7 @@ with tab2:
     fig_bar_perifericos.update_traces(textposition="outside")
     st.plotly_chart(fig_bar_perifericos, use_container_width=True)
 
+# ===== TAB 3: TINTAS =====
 with tab3:
     st.header("Tintas")
     df_tintas_filtrado = df_tintas[df_tintas["COR"].isin(cor_tinta)]
@@ -135,9 +147,9 @@ with tab3:
         barmode="group",
         category_orders={"CÓDIGO": sorted(df_tintas["CÓDIGO"].unique())},
         color_discrete_map={
-            "CYAN": "#00FFFF", 
-            "MAGENTA": "#FF00FF", 
-            "YELLOW": "#FFFF00", 
+            "CYAN": "#00FFFF",
+            "MAGENTA": "#FF00FF",
+            "YELLOW": "#FFFF00",
             "BLACK": "#000000"
         }
     )
