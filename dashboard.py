@@ -11,7 +11,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Lê a chave do arquivo de secrets
 escopo = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 chave_json = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
 credenciais = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(chave_json), escopo)
@@ -43,7 +42,7 @@ st.markdown("Visualização completa do estoque de toners, periféricos e tintas
 
 tab1, tab2, tab3 = st.tabs(["Toners", "Periféricos", "Tintas"])
 
-# ===== TAB 1: NOVA VISUALIZAÇÃO DE TONERS =====
+# ===== TAB 1: TONERS =====
 with tab1:
     st.header("Toners")
 
