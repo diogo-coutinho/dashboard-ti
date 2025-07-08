@@ -24,7 +24,7 @@ def carregar_dados(nome_aba, headers):
     dados = aba.get_all_records(expected_headers=headers)
     return pd.DataFrame(dados)
 
-df_toners = carregar_dados("Toners", ["MODELO", "LACRADO/ABERTO", "QUANTIDADE"])
+df_toners = carregar_dados("Toners", ["DESCRIÇÃO", "SETORES QUE UTILIZAM", "QUANTIDADE"])
 df_perifericos = carregar_dados("Periféricos", ["PERIFÉRICOS", "QUANTIDADE"])
 df_tintas = carregar_dados("Tintas", ["CÓDIGO", "COR", "QUANTIDADE"])
 
@@ -36,7 +36,6 @@ df_tintas["CÓDIGO"] = df_tintas["CÓDIGO"].astype(str)
 with st.sidebar:
     st.title("Filtros")
     st.markdown("Selecione os filtros para visualizar os dados.")
-    toner_status = st.selectbox("Status do Toner", options=["Todos", "LACRADO", "ABERTO"])
     cor_tinta = st.multiselect("Cores de Tinta", options=df_tintas["COR"].unique(), default=df_tintas["COR"].unique())
 
 st.title("📊 Inventário de TI")
@@ -44,66 +43,71 @@ st.markdown("Visualização completa do estoque de toners, periféricos e tintas
 
 tab1, tab2, tab3 = st.tabs(["Toners", "Periféricos", "Tintas"])
 
-# ===== TAB 1: TONERS =====
+# ===== TAB 1: NOVA VISUALIZAÇÃO DE TONERS =====
 with tab1:
     st.header("Toners")
 
-    if toner_status == "LACRADO":
-        df_toners_filtrado = df_toners[df_toners["LACRADO/ABERTO"] == "LACRADO"]
-    elif toner_status == "ABERTO":
-        df_toners_filtrado = df_toners[df_toners["LACRADO/ABERTO"] == "ABERTO"]
-    else:
-        df_toners_filtrado = df_toners
-
-    df_toners_filtrado = df_toners_filtrado[df_toners_filtrado["QUANTIDADE"] > 0]
+    df_toners = df_toners[df_toners["QUANTIDADE"] > 0]
+    df_toners["DESCRIÇÃO"] = df_toners["DESCRIÇÃO"].astype(str)
+    df_toners["SETORES QUE UTILIZAM"] = df_toners["SETORES QUE UTILIZAM"].astype(str)
 
     col1, col2 = st.columns(2)
     with col1:
-        st.metric(label="Total de Toners", value=int(df_toners_filtrado["QUANTIDADE"].sum()))
+        st.metric(label="Total de Toners", value=int(df_toners["QUANTIDADE"].sum()))
     with col2:
-        st.metric(label="Modelos Diferentes", value=df_toners_filtrado["MODELO"].nunique())
+        st.metric(label="Tipos de Toner", value=df_toners["DESCRIÇÃO"].nunique())
 
     col1, col2 = st.columns(2)
+
     with col1:
-        st.subheader("Distribuição de Status")
-        fig_pie = px.pie(
-            df_toners_filtrado,
-            names="LACRADO/ABERTO",
-            values="QUANTIDADE",
-            hole=0.3,
-            color="LACRADO/ABERTO",
-            color_discrete_map={"LACRADO": "#006400", "ABERTO": "#7CFC00"}
-        )
-        fig_pie.update_traces(textinfo='percent+label', textfont_size=14)
-        fig_pie.update_layout(showlegend=True, legend_title="Status")
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.subheader("Quantidade por Tipo de Toner")
+        toner_por_descricao = df_toners.groupby("DESCRIÇÃO", as_index=False)["QUANTIDADE"].sum()
+        toner_por_descricao = toner_por_descricao.sort_values("QUANTIDADE", ascending=False)
 
-    with col2:
-        st.subheader("Quantidade por Modelo")
-        df_grouped = df_toners_filtrado.groupby(["MODELO", "LACRADO/ABERTO"], as_index=False)["QUANTIDADE"].sum()
-        df_grouped_sorted = df_grouped.sort_values("QUANTIDADE", ascending=False)
-        df_grouped_sorted["MODELO"] = df_grouped_sorted["MODELO"].astype(str)
-
-        fig_bar = px.bar(
-            df_grouped_sorted,
-            x="MODELO",
+        fig_tipo = px.bar(
+            toner_por_descricao,
+            x="DESCRIÇÃO",
             y="QUANTIDADE",
-            color="LACRADO/ABERTO",
-            barmode="group",
             text="QUANTIDADE",
-            color_discrete_map={"LACRADO": "#006400", "ABERTO": "#7CFC00"}
+            color="DESCRIÇÃO",
+            color_discrete_sequence=px.colors.qualitative.Dark24
         )
-        fig_bar.update_traces(textposition="outside", textfont_size=12)
-        fig_bar.update_layout(
-            xaxis_title="Modelos",
+        fig_tipo.update_traces(textposition="outside")
+        fig_tipo.update_layout(
+            xaxis_tickangle=-45,
+            xaxis_title="Descrição do Toner",
             yaxis_title="Quantidade",
-            legend_title="Status",
+            showlegend=False,
             plot_bgcolor='rgba(0,0,0,0)',
-            yaxis=dict(showgrid=False),
-            xaxis_tickangle=-45
+            yaxis=dict(showgrid=False)
         )
-        fig_bar.update_xaxes(type='category')  # Força eixo X categórico
-        st.plotly_chart(fig_bar, use_container_width=True)
+        fig_tipo.update_xaxes(type='category')
+        st.plotly_chart(fig_tipo, use_container_width=True)
+
+    with col2:
+        st.subheader("Uso por Setor")
+        toner_por_setor = df_toners.groupby("SETORES QUE UTILIZAM", as_index=False)["QUANTIDADE"].sum()
+        toner_por_setor = toner_por_setor.sort_values("QUANTIDADE", ascending=False)
+
+        fig_setor = px.bar(
+            toner_por_setor,
+            x="SETORES QUE UTILIZAM",
+            y="QUANTIDADE",
+            text="QUANTIDADE",
+            color="SETORES QUE UTILIZAM",
+            color_discrete_sequence=px.colors.qualitative.Plotly
+        )
+        fig_setor.update_traces(textposition="outside")
+        fig_setor.update_layout(
+            xaxis_tickangle=-45,
+            xaxis_title="Setor",
+            yaxis_title="Quantidade",
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)',
+            yaxis=dict(showgrid=False)
+        )
+        fig_setor.update_xaxes(type='category')
+        st.plotly_chart(fig_setor, use_container_width=True)
 
 # ===== TAB 2: PERIFÉRICOS =====
 with tab2:
